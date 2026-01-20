@@ -1,5 +1,7 @@
 package dev.Frezz.state;
 
+import com.hypixel.hytale.protocol.PlayerSkin;
+
 /**
  * Représente l'état loup-garou d'un joueur.
  * Un joueur peut être humain, loup-garou, ou les deux dans le futur.
@@ -8,6 +10,15 @@ public class WerewolfState {
 
     private boolean isWerewolf;
     private boolean isTransformed;
+    private PlayerSkin originalSkin;
+
+    public void saveOriginalSkin(PlayerSkin skin) {
+        this.originalSkin = skin;
+    }
+
+    public PlayerSkin getOriginalSkin() {
+        return originalSkin;
+    }
 
     public WerewolfState() {
         this.isWerewolf = false;
