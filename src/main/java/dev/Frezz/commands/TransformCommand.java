@@ -1,0 +1,80 @@
+package dev.Frezz.commands;
+
+import com.hypixel.hytale.component.Holder;
+import com.hypixel.hytale.component.Ref;
+import com.hypixel.hytale.component.Store;
+import com.hypixel.hytale.server.core.Message;
+import com.hypixel.hytale.server.core.asset.type.model.config.Model;
+import com.hypixel.hytale.server.core.asset.type.model.config.ModelAsset;
+import com.hypixel.hytale.server.core.command.system.CommandContext;
+import com.hypixel.hytale.server.core.command.system.basecommands.AbstractPlayerCommand;
+import com.hypixel.hytale.server.core.entity.entities.Player;
+import com.hypixel.hytale.server.core.modules.entity.component.BoundingBox;
+import com.hypixel.hytale.server.core.modules.entity.component.ModelComponent;
+import com.hypixel.hytale.server.core.universe.PlayerRef;
+import com.hypixel.hytale.server.core.universe.world.World;
+import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
+import dev.Frezz.manager.WerewolfManager;
+import dev.Frezz.state.WerewolfState;
+
+import javax.annotation.Nonnull;
+
+/**
+ * Commande pour se transformer en loup-garou.
+ * Usage: /transform
+ */
+public class TransformCommand extends AbstractPlayerCommand {
+
+    // Modèle loup-garou (à remplacer par le vrai modèle quand disponible)
+    private static final String WEREWOLF_MODEL_NAME = "Minecart"; // TODO: Remplacer par le modèle loup-garou
+    private static final String HUMAN_MODEL_NAME = "Player"; // Modèle humain par défaut
+
+    public TransformCommand() {
+        super("transform", "Se transformer en loup-garou ou reprendre forme humaine");
+    }
+
+    @Override
+    protected void execute(@Nonnull CommandContext commandContext, @Nonnull Store<EntityStore> store, @Nonnull Ref<EntityStore> ref, @Nonnull PlayerRef playerRef, @Nonnull World world) {
+        if (store.getComponent(ref, Player.getComponentType()) instanceof Player player) {
+            WerewolfManager manager = WerewolfManager.getInstance();
+            WerewolfState state = manager.getState(player);
+
+            if (!state.isWerewolf()) {
+                commandContext.sendMessage(Message.raw("§cVous n'êtes pas un loup-garou!"));
+                return;
+            }
+
+            boolean success = state.toggleTransformation();
+
+            if (success) {
+
+                if (state.isTransformed()) {
+                    // Transformation en loup-garou
+                    ModelAsset werewolfModelAsset = ModelAsset.getAssetMap().getAsset(WEREWOLF_MODEL_NAME);
+                    System.out.println("Werewolf Model Asset: " + werewolfModelAsset);
+                    Model werewolfModel = Model.createScaledModel(werewolfModelAsset, 1.0f);
+
+                    store.replaceComponent(ref,ModelComponent.getComponentType(), new ModelComponent(werewolfModel));
+                    store.replaceComponent(ref, BoundingBox.getComponentType(), new BoundingBox(werewolfModel.getBoundingBox()));
+
+                    commandContext.sendMessage(Message.raw("§6Vous vous transformez en loup-garou!"));
+                    System.out.println("[VampireVsWerewolf] " + player.getDisplayName() + " s'est transformé en loup-garou");
+                } else {
+                    // Retour à la forme humaine
+                    ModelAsset humanModelAsset = ModelAsset.getAssetMap().getAsset(HUMAN_MODEL_NAME);
+                    Model humanModel = Model.createScaledModel(humanModelAsset, 1.0f);
+
+                    store.replaceComponent(ref,ModelComponent.getComponentType(), new ModelComponent(humanModel));
+                    store.replaceComponent(ref,BoundingBox.getComponentType(), new BoundingBox(humanModel.getBoundingBox()));
+
+                    commandContext.sendMessage(Message.raw("§aVous reprenez votre forme humaine."));
+                    System.out.println("[VampireVsWerewolf] " + player.getDisplayName() + " est redevenu humain");
+                }
+                manager.saveData();
+            }
+        } else {
+            commandContext.sendMessage(Message.raw("§cCette commande ne peut être utilisée que par un joueur."));
+        }
+    }
+}
+
